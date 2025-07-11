@@ -33,24 +33,6 @@ const Footer = () => {
           <ul className="flex flex-row md:flex-col gap-2 md:gap-1 text-gray-600">
             <li>+91 1234567890</li>
             <li>vats_fs.dev@gmail.com</li>
-            <ul className="flex flex-col gap-10 mt-5 md:flex-row md:gap-3">
-              <li className="text-2xl font-medium mb-5">
-                <a
-                  href="https://www.linkedin.com/in/vatsal-rathod-599828327"
-                  target="_blank"
-                >
-                  <FaLinkedin />
-                </a>
-              </li>
-              <li className="text-2xl font-medium mb-5">
-                <a
-                  href="https://instagram.com/i_am_vatsalrathod"
-                  target="_blank"
-                >
-                  <FaInstagram />
-                </a>
-              </li>
-            </ul>
           </ul>
         </div>
       </div>
