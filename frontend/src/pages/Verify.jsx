@@ -14,7 +14,6 @@ const Verify = () => {
   const orderId = searchParams.get("orderId");
   const session_id = searchParams.get("session_id");
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   const verifyPayment = async () => {
     try {
       if (!token) {

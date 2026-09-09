@@ -125,6 +125,10 @@ const verifyStripe = async (req, res) => {
       return res.json({ success: false, message: "Order not found" });
     }
 
+    if (order.payment === true) {
+      return res.json({ success: true, message: "Payment already verified" });
+    }
+
     await orderModel.findByIdAndUpdate(orderId, { payment: true });
     await userModel.findByIdAndUpdate(userId, { cartData: {} });
     res.json({ success: true });
@@ -132,7 +136,7 @@ const verifyStripe = async (req, res) => {
     console.log(error);
     res.json({ success: false, message: error.message });
   }
-}
+};
 
 //Placing orders using RazorPay method
 const placeOrderRazorpay = async (req, res) => {
@@ -175,11 +179,11 @@ const verifyRazorPay = async (req, res) => {
   try {
     const { userId, razorpay_order_id } = req.body;
     const orderInfo = await razorpayInstance.orders.fetch(razorpay_order_id);
-    if(orderInfo.status === "paid"){
+    if (orderInfo.status === "paid") {
       await orderModel.findByIdAndUpdate(orderInfo.receipt, { payment: true });
       await userModel.findByIdAndUpdate(userId, { cartData: {} });
       res.json({ success: true, message: "Payment successful" });
-    }else{
+    } else {
       res.json({ success: false, message: "Payment failed" });
     }
   } catch (error) {
@@ -232,5 +236,5 @@ export {
   userOrders,
   updateStatus,
   verifyStripe,
-  verifyRazorPay
+  verifyRazorPay,
 };
