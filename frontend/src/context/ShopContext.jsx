@@ -3,6 +3,7 @@ import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const ShopContext = createContext();
 
 const ShopContextProvider = (props) => {
@@ -60,7 +61,7 @@ const ShopContextProvider = (props) => {
             totalCount += cartItems[items][item];
           }
         } catch (e) {
-          // console.log(e);
+          console.log(e);
         }
       }
     }
@@ -100,13 +101,14 @@ const ShopContextProvider = (props) => {
             totalAmount += itemInfo.price * cartItems[items][item];
           }
         } catch (e) {
-          // console.log(e);
+          console.log(e);
         }
       }
     }
     return totalAmount;
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const getProductsData = async () => {
     try {
       const response = await axios.get(backendUrl + "/api/product/list");
@@ -121,6 +123,7 @@ const ShopContextProvider = (props) => {
     }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const getUserCart = async (token) => {
     try {
       const response = await axios.post(
@@ -141,14 +144,14 @@ const ShopContextProvider = (props) => {
 
   useEffect(() => {
     getProductsData();
-  }, []);
+  }, [getProductsData]);
 
   useEffect(() => {
     if (!token && localStorage.getItem("token")) {
       setToken(localStorage.getItem("token"));
       getUserCart(localStorage.getItem("token"));
     }
-  }, []);
+  }, [getUserCart, token]);
 
   const value = {
     products,

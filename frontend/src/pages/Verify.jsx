@@ -8,12 +8,13 @@ import { toast } from "react-toastify";
 
 const Verify = () => {
   const { navigate, token, setCartItems, backendUrl } = useContext(ShopContext);
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
 
   const success = searchParams.get("success");
   const orderId = searchParams.get("orderId");
   const session_id = searchParams.get("session_id");
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const verifyPayment = async () => {
     try {
       if (!token) {
@@ -38,7 +39,7 @@ const Verify = () => {
 
   useEffect(() => {
     verifyPayment();
-  }, [token]);
+  }, [token, verifyPayment]);
 
   return <div></div>;
 };
