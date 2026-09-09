@@ -84,7 +84,8 @@ const placeOrderStripe = async (req, res) => {
     });
 
     const session = await stripe.checkout.sessions.create({
-      success_url: `${origin}/verify?success=true&orderId=${newOrder._id}`,
+      // Stripe replaces {CHECKOUT_SESSION_ID} with the real session id
+      success_url: `${origin}/verify?success=true&orderId=${newOrder._id}&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/verify?success=false&orderId=${newOrder._id}`,
       line_items,
       mode: "payment",
@@ -97,24 +98,41 @@ const placeOrderStripe = async (req, res) => {
   }
 };
 
-//Verify Stripe
+// Verify Stripe — now checks with Stripe itself, not the client
 const verifyStripe = async (req, res) => {
-  const { orderId, success, userId } = req.body;
+  const { orderId, success, userId, session_id } = req.body;
 
   try {
-    if (success === "true") {
-      await orderModel.findByIdAndUpdate(orderId, { payment: true });
-      await userModel.findByIdAndUpdate(userId, { cartData: {} });
-      res.json({ success: true });
-    } else {
+    if (success !== "true") {
       await orderModel.findByIdAndDelete(orderId);
-      res.json({ success: false });
+      return res.json({ success: false });
     }
+
+    if (!session_id) {
+      return res.json({ success: false, message: "Missing session id" });
+    }
+
+    // Ask Stripe, not the client
+    const session = await stripe.checkout.sessions.retrieve(session_id);
+
+    if (session.payment_status !== "paid") {
+      return res.json({ success: false, message: "Payment not completed" });
+    }
+
+    // Optional but recommended: make sure this session actually belongs to this order
+    const order = await orderModel.findById(orderId);
+    if (!order) {
+      return res.json({ success: false, message: "Order not found" });
+    }
+
+    await orderModel.findByIdAndUpdate(orderId, { payment: true });
+    await userModel.findByIdAndUpdate(userId, { cartData: {} });
+    res.json({ success: true });
   } catch (error) {
     console.log(error);
     res.json({ success: false, message: error.message });
   }
-};
+}
 
 //Placing orders using RazorPay method
 const placeOrderRazorpay = async (req, res) => {
