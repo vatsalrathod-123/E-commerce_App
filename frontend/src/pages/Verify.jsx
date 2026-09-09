@@ -39,7 +39,8 @@ const Verify = () => {
 
   useEffect(() => {
     verifyPayment();
-  }, [token, verifyPayment]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
 
   return <div></div>;
 };
