@@ -8,6 +8,7 @@ import { toast } from "react-toastify";
 
 const PlaceOrder = () => {
   const [method, setMethod] = useState("cod");
+  const [issubmitting, setIsSubmitting] = useState(false);
 
   const {
     navigate,
@@ -54,7 +55,7 @@ const PlaceOrder = () => {
           const { data } = await axios.post(
             backendUrl + "/api/order/verifyrazorpay",
             response,
-            { headers: { token } }
+            { headers: { token } },
           );
           if (data.success) {
             navigate("/orders");
@@ -62,7 +63,7 @@ const PlaceOrder = () => {
           }
         } catch (error) {
           console.log(error);
-          toast.error(error.message); 
+          toast.error(error.message);
         }
       },
     };
@@ -72,6 +73,9 @@ const PlaceOrder = () => {
 
   const onSubmitHandler = async (event) => {
     event.preventDefault();
+    if (issubmitting) return;
+    setIsSubmitting(true);
+
     try {
       let orderItems = [];
 
@@ -79,7 +83,7 @@ const PlaceOrder = () => {
         for (const item in cartItems[items]) {
           if (cartItems[items][item] > 0) {
             const itemInfo = structuredClone(
-              products.find((product) => product._id === items)
+              products.find((product) => product._id === items),
             );
             if (itemInfo) {
               itemInfo.size = item;
@@ -98,11 +102,11 @@ const PlaceOrder = () => {
 
       switch (method) {
         //Api call for COD
-        case "cod":
+        case "cod": {
           const res = await axios.post(
             backendUrl + "/api/order/place",
             orderData,
-            { headers: { token } }
+            { headers: { token } },
           );
           if (res.data.success) {
             setCartItems({});
@@ -111,13 +115,14 @@ const PlaceOrder = () => {
             toast.error(res.data.message);
           }
           break;
+        }
 
         //Api call for Stripe
-        case "stripe":
+        case "stripe": {
           const responseStripe = await axios.post(
             backendUrl + "/api/order/stripe",
             orderData,
-            { headers: { token } }
+            { headers: { token } },
           );
 
           if (responseStripe.data.success) {
@@ -127,17 +132,19 @@ const PlaceOrder = () => {
             toast.error(responseStripe.data.message);
           }
           break;
+        }
 
-        case "razorpay":
+        case "razorpay": {
           const responseRazorpay = await axios.post(
             backendUrl + "/api/order/razorpay",
             orderData,
-            { headers: { token } }
+            { headers: { token } },
           );
           if (responseRazorpay.data.success) {
             initPay(responseRazorpay.data.order);
           }
           break;
+        }
 
         default:
           break;
@@ -145,6 +152,8 @@ const PlaceOrder = () => {
     } catch (error) {
       console.log(error);
       toast.error(error.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -294,9 +303,10 @@ const PlaceOrder = () => {
           <div className="w-full text-end mt-8">
             <button
               type="submit"
+              disabled={issubmitting}
               className="bg-black text-white px-16 py-3 text-sm cursor-pointer"
             >
-              PLACE ORDER
+              {issubmitting ? "Placing Order..." : "PLACE ORDER"}
             </button>
           </div>
         </div>
