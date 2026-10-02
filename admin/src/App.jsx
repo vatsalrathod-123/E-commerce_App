@@ -9,6 +9,7 @@ import Login from "./components/Login";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const backendURL = import.meta.env.VITE_BACKEND_URL;
 export const currency = "₹";
 
