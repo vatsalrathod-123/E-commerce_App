@@ -13,10 +13,10 @@ const Footer = () => {
             <img src={assets.logo} className="w-32 mb-5" alt="..." />
           </Link>
           <p className="w-full md:w-2/3 text-gray-600">
-            Lorem Ipsum is simply dummy text of the printing and typesetting
-            industry. Lorem Ipsum has been the industry's standard dummy text
-            ever since the 1500s, when an unknown printer took a galley of type
-            and scrambled it to make a type specimen book.
+            Forever brings you quality fashion for the whole family, from
+            everyday basics to the latest trends. We're committed to comfortable
+            fabrics, fair prices and fast, reliable delivery, so you can shop
+            with confidence.
           </p>
         </div>
         <div>
@@ -39,7 +39,7 @@ const Footer = () => {
       <div>
         <hr className="border-t border-gray-300" />
         <p className="py-5 text-sm text-center">
-          Copyright 2025@ forever.com - All rights reserved
+          @ 2026 ForeverBuy. All Rights Reserved.
         </p>
       </div>
     </div>
