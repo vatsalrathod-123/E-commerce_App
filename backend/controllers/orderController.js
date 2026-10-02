@@ -1,5 +1,6 @@
 import orderModel from "../models/orderModel.js";
 import userModel from "../models/userModel.js";
+import productModel from "../models/productModel.js";
 import Stripe from "stripe";
 import razorpay from "razorpay";
 
@@ -15,10 +16,24 @@ const razorpayInstance = new razorpay({
   key_secret: process.env.RAZORPAY_SECRET_KEY,
 });
 
+// helper function to calculate order amount
+const calculateOrderAmount = async (items) => {
+  let totalAmount = 0;
+  for (const item of items) {
+    const product = await productModel.findById(item._id);
+    if (!product) {
+      throw new Error(`Product with ID ${item._id} not found`);
+    }
+    totalAmount += product.price * item.quantity;
+  }
+  return (totalAmount += deleveryCharges); // Add delivery charges
+};
+
 //Placing orders using COD method
 const placeOrder = async (req, res) => {
   try {
-    const { userId, items, amount, address } = req.body;
+    const { userId, items, address } = req.body;
+    const amount = await calculateOrderAmount(items);
 
     const orderData = {
       userId,
@@ -45,7 +60,8 @@ const placeOrder = async (req, res) => {
 //Placing orders using Stripe method
 const placeOrderStripe = async (req, res) => {
   try {
-    const { userId, items, amount, address } = req.body;
+    const { userId, items, address } = req.body;
+    const amount = await calculateOrderAmount(items);
     const { origin } = req.headers;
 
     const orderData = {
@@ -141,7 +157,8 @@ const verifyStripe = async (req, res) => {
 //Placing orders using RazorPay method
 const placeOrderRazorpay = async (req, res) => {
   try {
-    const { userId, items, amount, address } = req.body;
+    const { userId, items, address } = req.body;
+    const amount = await calculateOrderAmount(items);
 
     const orderData = {
       userId,
