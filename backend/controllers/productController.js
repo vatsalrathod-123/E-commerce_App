@@ -71,6 +71,13 @@ const listProducts = async (req, res) => {
 //fuction for removing product
 const removeProduct = async (req, res) => {
   try {
+    const product = await productModel.findById(req.body.id);
+    if (product) {
+      for (const imgUrl of product.image) {
+        const publicId = imgUrl.split("/").pop().split(".")[0];
+        await cloudinary.uploader.destroy(publicId);
+      }
+    }
     await productModel.findByIdAndDelete(req.body.id);
     res.json({ success: true, message: "Product Removed" });
   } catch (error) {
