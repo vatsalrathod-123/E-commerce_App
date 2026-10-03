@@ -58,7 +58,7 @@ const ShopContextProvider = (props) => {
       for (const item in cartItems[items]) {
         try {
           if (cartItems[items][item] > 0) {
-            totalCount += cartItems[items][item];
+            totalCount += 1;
           }
         } catch (e) {
           console.log(e);
