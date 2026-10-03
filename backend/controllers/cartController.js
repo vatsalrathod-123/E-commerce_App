@@ -41,6 +41,10 @@ const updateCart = async (req, res) => {
     }
     let cartData = await userData.cartData;
 
+    if (!cartData[itemId]) {
+      cartData[itemId] = {};
+    }
+
     cartData[itemId][size] = quantity;
 
     await userModel.findByIdAndUpdate(userId, { cartData });
