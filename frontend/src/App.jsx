@@ -12,7 +12,8 @@ import Product from "./pages/Product";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import SearchBar from "./components/SearchBar";
-import { ToastContainer, toast } from "react-toastify";
+import Chatbot from "./components/Chatbot";
+import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Verify from "./pages/Verify";
 
@@ -35,6 +36,7 @@ const App = () => {
         <Route path="/verify" element={<Verify />} />
       </Routes>
       <Footer />
+      <Chatbot />
     </div>
   );
 };
