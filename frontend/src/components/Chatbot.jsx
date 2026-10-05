@@ -51,7 +51,7 @@ const Chatbot = () => {
       {open && (
         <div className="w-[calc(100vw-2rem)] sm:w-80 h-[28rem] max-h-[75vh] bg-white border border-gray-200 shadow-xl flex flex-col mb-3">
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-black text-white">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-[#c586a5] text-white">
             <p className="text-sm font-medium">Shopping Assistant</p>
             <button
               onClick={() => setOpen(false)}
@@ -113,7 +113,7 @@ const Chatbot = () => {
       {/* Floating toggle button */}
       <button
         onClick={() => setOpen((o) => !o)}
-        className="bg-black text-white w-12 h-12 rounded-full text-xl shadow-lg cursor-pointer"
+        className="bg-[#c586a5] text-[#262626] w-12 h-12 rounded-full text-xl shadow-lg cursor-pointer"
         aria-label="Toggle chat"
       >
         {open ? "✕" : "💬"}
