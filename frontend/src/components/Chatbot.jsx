@@ -102,7 +102,7 @@ const Chatbot = () => {
             <button
               onClick={sendMessage}
               disabled={loading || !input.trim()}
-              className="bg-black text-white px-4 text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-[#c586a5] text-white px-4 text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Send
             </button>
