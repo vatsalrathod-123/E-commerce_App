@@ -73,7 +73,7 @@ const Chatbot = () => {
                 key={i}
                 className={`max-w-[85%] px-3 py-2 whitespace-pre-wrap break-words ${
                   m.role === "user"
-                    ? "self-end bg-black text-white"
+                    ? "self-end bg-[#c586a5] text-white"
                     : "self-start bg-gray-100 text-gray-700"
                 }`}
               >
