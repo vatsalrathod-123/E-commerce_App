@@ -251,8 +251,12 @@ const PlaceOrder = () => {
           name="phone"
           value={formData.phone}
           className="border border-gray-300 rounded py-1.5 px-3.5 w-full"
-          type="number"
+          type="tel"
+          imputmode="numeric"
+          pattern="[0-9]{10}"
+          maxlength="10"
           placeholder="Phone No"
+          title="Please enter a valid 10-digit phone number"
         />
       </div>
       {/* ------------------------ Right Side ------------------------ */}
