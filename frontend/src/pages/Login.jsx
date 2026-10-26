@@ -33,22 +33,22 @@ const Login = () => {
         });
         if (response.data.success) {
           setToken(response.data.token);
-          localStorage.setItem("token",response.data.token)          
-        }else{
-          toast.error(response.data.message)
+          localStorage.setItem("token", response.data.token);
+        } else {
+          toast.error(response.data.message);
         }
       }
     } catch (error) {
       console.log(error);
-      toast.error(error.message)      
+      toast.error(error.message);
     }
   };
 
-  useEffect(()=>{
-    if(token){
-      navigate("/")
+  useEffect(() => {
+    if (token) {
+      navigate("/");
     }
-  },[token]);
+  }, [token]);
 
   return (
     <form
@@ -88,7 +88,12 @@ const Login = () => {
         required
       />
       <div className="w-full flex justify-between text-sm mt-[-8px]">
-        <p className="cursor-pointer">Forgot your password? </p>
+        <p
+          onClick={() => navigate("/forgot-password")}
+          className="cursor-pointer"
+        >
+          Forgot your password?{" "}
+        </p>
         {currentState === "Login" ? (
           <p
             onClick={() => setCurrentState("Sign Up")}
