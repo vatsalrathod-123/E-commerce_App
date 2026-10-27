@@ -20,20 +20,8 @@ const addProduct = async (req, res) => {
     const image4 = req.files.image4 && req.files.image4[0];
 
     const images = [image1, image2, image3, image4].filter(
-      (item) => item !== undefined,
+      (item) => item !== undefined
     );
-
-    // Optional transparent garment cutout for the live try-on feature
-    const tryOnFile = req.files.tryOnImage && req.files.tryOnImage[0];
-    if (
-      tryOnFile &&
-      !["image/png", "image/webp"].includes(tryOnFile.mimetype)
-    ) {
-      return res.json({
-        success: false,
-        message: "Try-on image must be a transparent PNG or WebP",
-      });
-    }
 
     let imagesURL = await Promise.all(
       images.map(async (item) => {
@@ -41,16 +29,8 @@ const addProduct = async (req, res) => {
           resource_type: "image",
         });
         return result.secure_url;
-      }),
+      })
     );
-
-    let tryOnImageURL = "";
-    if (tryOnFile) {
-      const result = await cloudinary.uploader.upload(tryOnFile.path, {
-        resource_type: "image",
-      });
-      tryOnImageURL = result.secure_url;
-    }
 
     const productData = {
       name,
@@ -61,8 +41,6 @@ const addProduct = async (req, res) => {
       bestseller: bestseller === "true" ? "true" : "false",
       sizes: JSON.parse(sizes),
       image: imagesURL,
-      tryOnImage: tryOnImageURL,
-      tryOnType: tryOnImageURL ? "top" : "",
       date: Date.now(),
     };
 
@@ -95,8 +73,7 @@ const removeProduct = async (req, res) => {
   try {
     const product = await productModel.findById(req.body.id);
     if (product) {
-      const allImages = [...product.image, product.tryOnImage].filter(Boolean);
-      for (const imgUrl of allImages) {
+      for (const imgUrl of product.image) {
         const publicId = imgUrl.split("/").pop().split(".")[0];
         await cloudinary.uploader.destroy(publicId);
       }
