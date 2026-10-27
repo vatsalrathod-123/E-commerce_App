@@ -1,8 +1,11 @@
-import React, { useContext, useState, useEffect } from "react";
+import React, { useContext, useState, useEffect, lazy, Suspense } from "react";
 import { useParams } from "react-router-dom";
 import { ShopContext } from "../context/ShopContext";
 import { assets } from "../assets/assets";
 import RelatedProducts from "../components/RelatedProducts";
+
+// Loaded on demand so MediaPipe never ends up in the main bundle
+const TryOn = lazy(() => import("../components/TryOn"));
 
 const Product = () => {
   const { productId } = useParams();
@@ -10,6 +13,7 @@ const Product = () => {
   const [productData, setProductData] = useState(false);
   const [image, setImage] = useState("");
   const [size, setSize] = useState("");
+  const [showTryOn, setShowTryOn] = useState(false);
 
   const fetchProductData = async () => {
     products.map((item) => {
@@ -86,6 +90,14 @@ const Product = () => {
           >
             ADD TO CART
           </button>
+          {productData.tryOnImage && productData.tryOnType === "top" && (
+            <button
+              onClick={() => setShowTryOn(true)}
+              className="ml-3 border border-black px-8 py-3 text-sm cursor-pointer"
+            >
+              TRY ON LIVE
+            </button>
+          )}
           <hr className="mt-8 sm:w-4/5 border-gray-200" />
           <div className="text-sm text-gray-500 mt-5 flex flex-col gap-1">
             <p>100% Original product.</p>
@@ -130,6 +142,20 @@ const Product = () => {
         category={productData.category}
         subCategory={productData.subCategory}
       />
+
+      {showTryOn && (
+        <Suspense fallback={null}>
+          <TryOn
+            product={productData}
+            initialSize={size}
+            onAddToCart={(selectedSize) => {
+              setSize(selectedSize);
+              addToCart(productData._id, selectedSize);
+            }}
+            onClose={() => setShowTryOn(false)}
+          />
+        </Suspense>
+      )}
     </div>
   ) : (
     <div className="opacity-0"></div>

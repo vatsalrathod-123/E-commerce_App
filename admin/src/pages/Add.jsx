@@ -9,6 +9,7 @@ const Add = ({ token }) => {
   const [image2, setImage2] = useState(false);
   const [image3, setImage3] = useState(false);
   const [image4, setImage4] = useState(false);
+  const [tryOnImage, setTryOnImage] = useState(false);
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -36,11 +37,12 @@ const Add = ({ token }) => {
       image2 && formData.append("image2", image2);
       image3 && formData.append("image3", image3);
       image4 && formData.append("image4", image4);
+      tryOnImage && formData.append("tryOnImage", tryOnImage);
 
       const response = await axios.post(
         backendURL + "/api/product/add",
         formData,
-        { headers: { token } }
+        { headers: { token } },
       );
 
       if (response.data.success) {
@@ -51,6 +53,7 @@ const Add = ({ token }) => {
         setImage2(false);
         setImage3(false);
         setImage4(false);
+        setTryOnImage(false);
         setPrice("");
       } else {
         toast.error(response.data.message);
@@ -123,6 +126,43 @@ const Add = ({ token }) => {
           </label>
         </div>
       </div>
+      <div>
+        <p className="mb-1">Live try-on image (optional)</p>
+        <p className="mb-2 text-xs text-gray-500 max-w-[500px]">
+          Transparent PNG/WebP of just the garment, front view, no model or
+          background. Only tops are supported for now. Without it, the "Try On"
+          button won't show for this product.
+        </p>
+        <label htmlFor="tryOnImage" className="inline-block">
+          <div
+            className="w-20 h-20 border border-gray-300 flex items-center justify-center"
+            style={{
+              backgroundColor: "#e5e7eb",
+              backgroundImage:
+                "linear-gradient(45deg,#fff 25%,transparent 25%,transparent 75%,#fff 75%),linear-gradient(45deg,#fff 25%,transparent 25%,transparent 75%,#fff 75%)",
+              backgroundSize: "12px 12px",
+              backgroundPosition: "0 0, 6px 6px",
+            }}
+          >
+            <img
+              className="max-w-full max-h-full object-contain"
+              src={
+                !tryOnImage
+                  ? assets.upload_area
+                  : URL.createObjectURL(tryOnImage)
+              }
+              alt="..."
+            />
+          </div>
+          <input
+            onChange={(e) => setTryOnImage(e.target.files[0] || false)}
+            type="file"
+            id="tryOnImage"
+            accept="image/png,image/webp"
+            hidden
+          />
+        </label>
+      </div>
       <div className="w-full">
         <p className="mb-2">Product name</p>
         <input
@@ -192,7 +232,7 @@ const Add = ({ token }) => {
               setSizes((prev) =>
                 prev.includes("S")
                   ? prev.filter((item) => item !== "S")
-                  : [...prev, "S"]
+                  : [...prev, "S"],
               )
             }
           >
@@ -209,7 +249,7 @@ const Add = ({ token }) => {
               setSizes((prev) =>
                 prev.includes("M")
                   ? prev.filter((item) => item !== "M")
-                  : [...prev, "M"]
+                  : [...prev, "M"],
               )
             }
           >
@@ -226,7 +266,7 @@ const Add = ({ token }) => {
               setSizes((prev) =>
                 prev.includes("L")
                   ? prev.filter((item) => item !== "L")
-                  : [...prev, "L"]
+                  : [...prev, "L"],
               )
             }
           >
@@ -243,7 +283,7 @@ const Add = ({ token }) => {
               setSizes((prev) =>
                 prev.includes("XL")
                   ? prev.filter((item) => item !== "XL")
-                  : [...prev, "XL"]
+                  : [...prev, "XL"],
               )
             }
           >
@@ -260,7 +300,7 @@ const Add = ({ token }) => {
               setSizes((prev) =>
                 prev.includes("XXL")
                   ? prev.filter((item) => item !== "XXL")
-                  : [...prev, "XXL"]
+                  : [...prev, "XXL"],
               )
             }
           >

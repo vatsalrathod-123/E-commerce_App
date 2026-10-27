@@ -18,10 +18,11 @@ productRouter.post(
     { name: "image2", maxCount: 1 },
     { name: "image3", maxCount: 1 },
     { name: "image4", maxCount: 1 },
+    { name: "tryOnImage", maxCount: 1 },
   ]),
-  addProduct
+  addProduct,
 );
-productRouter.post("/remove",adminAuth, removeProduct);
+productRouter.post("/remove", adminAuth, removeProduct);
 productRouter.post("/single", singleProduct);
 productRouter.get("/list", listProducts);
 
