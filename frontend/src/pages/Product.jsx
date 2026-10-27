@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useContext, useState, useEffect, lazy, Suspense } from "react";
 import { useParams } from "react-router-dom";
 import { ShopContext } from "../context/ShopContext";
