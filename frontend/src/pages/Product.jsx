@@ -1,9 +1,5 @@
-<<<<<<< HEAD
 /* eslint-disable react-hooks/exhaustive-deps */
-import React, { useContext, useState, useEffect, lazy, Suspense } from "react";
-=======
 import React, { useContext, useState, useEffect } from "react";
->>>>>>> parent of 78f1754 (add: Try On feature)
 import { useParams } from "react-router-dom";
 import { ShopContext } from "../context/ShopContext";
 import { assets } from "../assets/assets";
