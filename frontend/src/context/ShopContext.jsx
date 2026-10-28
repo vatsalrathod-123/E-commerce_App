@@ -6,7 +6,7 @@ import axios from "axios";
 // eslint-disable-next-line react-refresh/only-export-components
 export const ShopContext = createContext();
 
-const ShopContextProvider = (props) => {
+const ShopContextProvider = (props) => {  
   const currency = "₹";
   const delivery_fee = 10;
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
