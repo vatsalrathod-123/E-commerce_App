@@ -1,6 +1,12 @@
 import express from "express";
 import rateLimit from "express-rate-limit";
-import { chatWithAssistant } from "../controllers/chatController.js";
+import {
+  chatWithAssistant,
+  getChatHistory,
+  clearChatHistory,
+} from "../controllers/chatController.js";
+import optionalAuth from "../middleware/optionalAuth.js";
+import authUser from "../middleware/auth.js";
 
 const chatRouter = express.Router();
 
@@ -12,5 +18,7 @@ const chatLimiter = rateLimit({
 });
 
 chatRouter.post("/", chatLimiter, chatWithAssistant);
+chatRouter.get("/history", optionalAuth, getChatHistory);
+chatRouter.delete("/clear", authUser, clearChatHistory);
 
 export default chatRouter;
