@@ -1,11 +1,14 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useContext, useEffect } from "react";
 import { ShopContext } from "../context/ShopContext";
 import Title from "../components/Title";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const Orders = () => {
   const { backendUrl, token, currency } = useContext(ShopContext);
   const [orderData, setOrderData] = useState([]);
+  const navigate = useNavigate();
 
   const loadOrderData = async () => {
     try {
@@ -16,24 +19,26 @@ const Orders = () => {
       const response = await axios.post(
         backendUrl + "/api/order/userorders",
         {},
-        { headers: { token } }
+        { headers: { token } },
       );
-      if(response.data.success){
+      if (response.data.success) {
         let allOrdersItems = [];
-        response.data.orders.map((order)=>{
-          order.items.map((item)=>{
-            item['status'] = order.status;
-            item['payment'] = order.payment;
-            item['paymentMethod'] = order.paymentMethod;
-            item['date'] = order.date;
+        response.data.orders.map((order) => {
+          order.items.map((item, itemIndex) => {
+            item["orderId"] = order._id;
+            item["itemIndex"] = itemIndex;
+            item["status"] = order.status;
+            item["payment"] = order.payment;
+            item["paymentMethod"] = order.paymentMethod;
+            item["date"] = order.date;
             allOrdersItems.push(item);
-          })
-        })
+          });
+        });
         setOrderData(allOrdersItems.reverse());
-        
       }
-      
-    } catch (error) {}
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   useEffect(() => {
@@ -64,10 +69,15 @@ const Orders = () => {
                   <p>Size: {item.size} </p>
                 </div>
                 <p className="mt-1">
-                  Date: <span className="text-gray-400"> {new Date(item.date).toDateString()} </span>
+                  Date:{" "}
+                  <span className="text-gray-400">
+                    {" "}
+                    {new Date(item.date).toDateString()}{" "}
+                  </span>
                 </p>
                 <p className="mt-1">
-                  Payment: <span className="text-gray-400"> {item.paymentMethod  } </span>
+                  Payment:{" "}
+                  <span className="text-gray-400"> {item.paymentMethod} </span>
                 </p>
               </div>
             </div>
@@ -76,7 +86,12 @@ const Orders = () => {
                 <p className="min-w-2 h-2 rounded-full bg-green-500"></p>
                 <p className="text-sm md:text-base"> {item.status} </p>
               </div>
-              <button onClick={loadOrderData} className="border border-gray-200 px-4 py-2 text-sm font-medium rounded-sm cursor-pointer">
+              <button
+                onClick={() =>
+                  navigate(`/track-order/${item.orderId}/${item.itemIndex}`)
+                }
+                className="border border-gray-200 px-4 py-2 text-sm font-medium rounded-sm cursor-pointer"
+              >
                 Track Order
               </button>
             </div>

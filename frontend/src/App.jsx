@@ -8,6 +8,7 @@ import Cart from "./pages/Cart";
 import Login from "./pages/Login";
 import Orders from "./pages/Orders";
 import PlaceOrder from "./pages/PlaceOrder";
+import TrackOrder from "./pages/TrackOrder";
 import Product from "./pages/Product";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
@@ -35,6 +36,10 @@ const App = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/place-order" element={<PlaceOrder />} />
         <Route path="/orders" element={<Orders />} />
+        <Route
+          path="/track-order/:orderId/:itemIndex"
+          element={<TrackOrder />}
+        />
         <Route path="/verify" element={<Verify />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password/:token" element={<ResetPassword />} />
