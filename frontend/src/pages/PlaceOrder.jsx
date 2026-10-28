@@ -6,6 +6,67 @@ import { ShopContext } from "../context/ShopContext";
 import axios from "axios";
 import { toast } from "react-toastify";
 
+// ------------------------ Validation ------------------------
+const NAME_REGEX = /^[A-Za-z][A-Za-z\s.'-]*$/;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const validateField = (name, rawValue) => {
+  const value = (rawValue || "").trim();
+
+  switch (name) {
+    case "firstName":
+    case "lastName": {
+      const label = name === "firstName" ? "First name" : "Last name";
+      if (!value) return `${label} is required`;
+      if (value.length < 2) return `${label} must be at least 2 characters`;
+      if (!NAME_REGEX.test(value)) return `${label} can only contain letters`;
+      return "";
+    }
+    case "email":
+      if (!value) return "Email is required";
+      if (!EMAIL_REGEX.test(value)) return "Enter a valid email address";
+      return "";
+    case "street":
+      if (!value) return "Street is required";
+      if (value.length < 5) return "Street must be at least 5 characters";
+      return "";
+    case "city":
+    case "state":
+    case "country": {
+      const label = name.charAt(0).toUpperCase() + name.slice(1);
+      if (!value) return `${label} is required`;
+      if (!NAME_REGEX.test(value)) return `${label} can only contain letters`;
+      return "";
+    }
+    case "zipcode":
+      if (!value) return "Zipcode is required";
+      if (!/^\d{6}$/.test(value)) return "Zipcode must be exactly 6 digits";
+      return "";
+    case "phone":
+      if (!value) return "Phone number is required";
+      if (!/^\d{10}$/.test(value))
+        return "Phone number must be exactly 10 digits";
+      return "";
+    default:
+      return "";
+  }
+};
+
+// ------------------------ Reusable input with red error state ------------------------
+const FormInput = ({ error, className = "", ...props }) => (
+  <div className="flex flex-col w-full">
+    <input
+      {...props}
+      className={`border rounded py-1.5 px-3.5 w-full outline-none ${
+        error
+          ? "border-red-500 text-red-500 placeholder-red-300"
+          : "border-gray-300"
+      } ${className}`}
+    />
+    {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
+  </div>
+);
+
 const PlaceOrder = () => {
   const [method, setMethod] = useState("cod");
   const [issubmitting, setIsSubmitting] = useState(false);
@@ -33,11 +94,40 @@ const PlaceOrder = () => {
     phone: "",
   });
 
+  const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
+
   const onChangeHandler = (event) => {
-    const name = event.target.name;
-    const value = event.target.value;
+    const { name } = event.target;
+    let { value } = event.target;
+
+    // Zipcode & phone: digits only (keeps leading zeros, blocks letters and "e")
+    if (name === "zipcode" || name === "phone") {
+      value = value.replace(/\D/g, "");
+    }
 
     setFormData((data) => ({ ...data, [name]: value }));
+
+    // Once a field has been touched, keep its error message up to date while typing
+    if (touched[name]) {
+      setErrors((prev) => ({ ...prev, [name]: validateField(name, value) }));
+    }
+  };
+
+  const onBlurHandler = (event) => {
+    const { name, value } = event.target;
+    setTouched((prev) => ({ ...prev, [name]: true }));
+    setErrors((prev) => ({ ...prev, [name]: validateField(name, value) }));
+  };
+
+  const handleMethodClick = (selected) => {
+    if (selected === "razorpay") {
+      toast.warning("Razorpay is unavailable during the testing period", {
+        toastId: "razorpay-unavailable",
+      });
+      return;
+    }
+    setMethod(selected);
   };
 
   const initPay = (order) => {
@@ -74,6 +164,24 @@ const PlaceOrder = () => {
   const onSubmitHandler = async (event) => {
     event.preventDefault();
     if (issubmitting) return;
+
+    // ---- Validate all fields before placing the order ----
+    const newErrors = {};
+    const allTouched = {};
+    Object.keys(formData).forEach((name) => {
+      allTouched[name] = true;
+      const message = validateField(name, formData[name]);
+      if (message) newErrors[name] = message;
+    });
+    setTouched(allTouched);
+    setErrors(newErrors);
+
+    const firstInvalid = Object.keys(formData).find((name) => newErrors[name]);
+    if (firstInvalid) {
+      document.querySelector(`[name="${firstInvalid}"]`)?.focus();
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -94,8 +202,13 @@ const PlaceOrder = () => {
         }
       }
 
+      // Send trimmed address values
+      const address = Object.fromEntries(
+        Object.entries(formData).map(([key, value]) => [key, value.trim()]),
+      );
+
       let orderData = {
-        address: formData,
+        address,
         items: orderItems,
         amount: getCartAmount() + delivery_fee,
       };
@@ -160,6 +273,7 @@ const PlaceOrder = () => {
   return (
     <form
       onSubmit={onSubmitHandler}
+      noValidate
       className="flex flex-col sm:flex-row justify-between gap-4 pt-5 sm:pt-14 min-h-[80vh] border-t border-gray-200"
     >
       {/* ------------------------ Left Side ------------------------ */}
@@ -168,97 +282,98 @@ const PlaceOrder = () => {
           <Title text1={"DELIVERY"} text2={"INFORMATION"} />
         </div>
         <div className="flex gap-3">
-          <input
-            required
+          <FormInput
+            error={errors.firstName}
             onChange={onChangeHandler}
+            onBlur={onBlurHandler}
             name="firstName"
             value={formData.firstName}
-            className="border border-gray-300 rounded py-1.5 px-3.5 w-full"
             type="text"
             placeholder="First name"
           />
-          <input
-            required
+          <FormInput
+            error={errors.lastName}
             onChange={onChangeHandler}
+            onBlur={onBlurHandler}
             name="lastName"
             value={formData.lastName}
-            className="border border-gray-300 rounded py-1.5 px-3.5 w-full"
             type="text"
             placeholder="Last name"
           />
         </div>
-        <input
-          required
+        <FormInput
+          error={errors.email}
           onChange={onChangeHandler}
+          onBlur={onBlurHandler}
           name="email"
           value={formData.email}
-          className="border border-gray-300 rounded py-1.5 px-3.5 w-full"
           type="email"
           placeholder="Email address"
         />
-        <input
-          required
+        <FormInput
+          error={errors.street}
           onChange={onChangeHandler}
+          onBlur={onBlurHandler}
           name="street"
           value={formData.street}
-          className="border border-gray-300 rounded py-1.5 px-3.5 w-full"
           type="text"
           placeholder="Street"
         />
         <div className="flex gap-3">
-          <input
-            required
+          <FormInput
+            error={errors.city}
             onChange={onChangeHandler}
+            onBlur={onBlurHandler}
             name="city"
             value={formData.city}
-            className="border border-gray-300 rounded py-1.5 px-3.5 w-full"
             type="text"
             placeholder="City"
           />
-          <input
-            required
+          <FormInput
+            error={errors.state}
             onChange={onChangeHandler}
+            onBlur={onBlurHandler}
             name="state"
             value={formData.state}
-            className="border border-gray-300 rounded py-1.5 px-3.5 w-full"
             type="text"
             placeholder="State"
           />
         </div>
         <div className="flex gap-3">
-          <input
-            required
+          <FormInput
+            error={errors.zipcode}
             onChange={onChangeHandler}
+            onBlur={onBlurHandler}
             name="zipcode"
             value={formData.zipcode}
-            className="border border-gray-300 rounded py-1.5 px-3.5 w-full"
-            type="number"
+            type="text"
+            inputMode="numeric"
+            maxLength={6}
             placeholder="Zipcode"
           />
-          <input
-            required
+          <FormInput
+            error={errors.country}
             onChange={onChangeHandler}
+            onBlur={onBlurHandler}
             name="country"
             value={formData.country}
-            className="border border-gray-300 rounded py-1.5 px-3.5 w-full"
             type="text"
             placeholder="Country"
           />
         </div>
-        <input
-          required
+        <FormInput
+          error={errors.phone}
           onChange={onChangeHandler}
+          onBlur={onBlurHandler}
           name="phone"
           value={formData.phone}
-          className="border border-gray-300 rounded py-1.5 px-3.5 w-full"
           type="tel"
-          imputmode="numeric"
-          pattern="[0-9]{10}"
-          maxlength="10"
+          inputMode="numeric"
+          maxLength={10}
           placeholder="Phone No"
-          title="Please enter a valid 10-digit phone number"
         />
       </div>
+
       {/* ------------------------ Right Side ------------------------ */}
       <div className="mt-8">
         <div className="mt-8 min-w-80">
@@ -269,7 +384,7 @@ const PlaceOrder = () => {
           {/* --------------- Payment Method Selection ---------------- */}
           <div className="flex gap-3 flex-col lg:flex-row">
             <div
-              onClick={() => setMethod("stripe")}
+              onClick={() => handleMethodClick("stripe")}
               className="flex items-center gap-3 border border-gray-200 p-2 px-3 cursor-pointer"
             >
               <p
@@ -279,9 +394,10 @@ const PlaceOrder = () => {
               ></p>
               <img className="h-5 mx-4" src={assets.stripe_logo} alt="" />
             </div>
+            {/* Razorpay is paused during testing: shows a toast on click */}
             <div
-              onClick={() => setMethod("razorpay")}
-              className="flex items-center gap-3 border border-gray-200 p-2 px-3 cursor-pointer"
+              onClick={() => handleMethodClick("razorpay")}
+              className="flex items-center gap-3 border border-gray-200 p-2 px-3 cursor-not-allowed opacity-50"
             >
               <p
                 className={`min-w-3.5 h-3.5 border border-gray-200 rounded-full ${
@@ -291,7 +407,7 @@ const PlaceOrder = () => {
               <img className="h-5 mx-4" src={assets.razorpay_logo} alt="" />
             </div>
             <div
-              onClick={() => setMethod("cod")}
+              onClick={() => handleMethodClick("cod")}
               className="flex items-center gap-3 border border-gray-200 p-2 px-3 cursor-pointer"
             >
               <p
