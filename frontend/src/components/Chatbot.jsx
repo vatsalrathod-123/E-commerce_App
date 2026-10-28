@@ -1,6 +1,8 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { ShopContext } from "../context/ShopContext";
+import { VscClose } from "react-icons/vsc";
+import { TbMessageChatbotFilled } from "react-icons/tb";
 
 const WELCOME =
   "Hi! I'm your shopping assistant. Ask me about our products, sizes or outfit ideas.";
@@ -113,10 +115,10 @@ const Chatbot = () => {
       {/* Floating toggle button */}
       <button
         onClick={() => setOpen((o) => !o)}
-        className="bg-[#c586a5] text-[#262626] w-12 h-12 rounded-full text-xl shadow-lg cursor-pointer"
+        className="bg-[#c586a5] text-[#262626] w-12 h-12 rounded-full text-xl shadow-lg cursor-pointer flex items-center justify-center hover:scale-105 transition-transform"
         aria-label="Toggle chat"
       >
-        {open ? "✕" : "💬"}
+        {open ? <VscClose size={22} /> : <TbMessageChatbotFilled size={22} />}
       </button>
     </div>
   );
