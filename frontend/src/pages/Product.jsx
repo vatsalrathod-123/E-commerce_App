@@ -101,8 +101,9 @@ const Product = () => {
       formData.append("photo", photo);
       formData.append("productId", productId);
 
+      // The free GPU takes about 7 minutes, so allow 13 minutes
       const { data } = await axios.post(backendUrl + "/api/tryon", formData, {
-        timeout: 90000,
+        timeout: 780000,
       });
       if (data.success) {
         setTryOnResult(data.image);
@@ -237,7 +238,9 @@ const Product = () => {
                   disabled={!photo || generating}
                   className="bg-black text-white px-6 py-2 text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {generating ? "Creating preview..." : "GENERATE PREVIEW"}
+                  {generating
+                    ? "Creating preview (about 7 minutes)..."
+                    : "GENERATE PREVIEW"}
                 </button>
                 {photo && !generating && (
                   <button

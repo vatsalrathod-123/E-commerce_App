@@ -1,25 +1,51 @@
+import mongoose from "mongoose";
 import productModel from "../models/productModel.js";
 
-const MODEL = process.env.TRYON_MODEL || "gemini-2.5-flash-preview-image";
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const POLL_INTERVAL_MS = 5000;
+const JOB_DEADLINE_MS = 720000; // 12 minutes total (free T4 takes about 7)
+const REQUEST_TIMEOUT_MS = 60000; // each request to Colab
+const IMAGE_TIMEOUT_MS = 60000; // downloading the product image
 
 const isEnabled = () => process.env.TRYON_ENABLED === "true";
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // Tells the frontend whether to show the "Try it on" button
 const getTryOnStatus = (req, res) => {
   res.json({ success: true, enabled: isEnabled() });
 };
 
-// Downloads an image URL and returns its base64 data and mime type
-const urlToBase64 = async (url) => {
-  const response = await fetch(url);
+// Maps a store product to the category FASHN expects
+const pickCategory = (product) => {
+  const text =
+    `${product.subCategory || ""} ${product.name || ""}`.toLowerCase();
+  if (/bottom|pant|jean|trouser|short|skirt|jogger/.test(text))
+    return "bottoms";
+  if (/dress|jumpsuit|saree|one.?piece/.test(text)) return "one-pieces";
+  return "tops";
+};
+
+// Downloads the real product image from its stored URL
+const fetchProductImage = async (url) => {
+  const response = await fetch(url, {
+    signal: AbortSignal.timeout(IMAGE_TIMEOUT_MS),
+  });
   if (!response.ok) throw new Error("Could not load product image");
-  const mimeType = response.headers.get("content-type") || "image/jpeg";
-  const buffer = Buffer.from(await response.arrayBuffer());
-  return { mimeType, data: buffer.toString("base64") };
+  return response.blob();
+};
+
+// Calls the Colab service with the shared key and a timeout
+const callService = (path, options = {}) => {
+  const baseUrl = process.env.TRYON_SERVICE_URL.replace(/\/$/, "");
+  return fetch(baseUrl + path, {
+    ...options,
+    headers: { "x-service-key": process.env.TRYON_SERVICE_KEY },
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+  });
 };
 
 const tryOn = async (req, res) => {
+  let step = "validate";
   try {
     if (!isEnabled()) {
       return res.json({
@@ -27,9 +53,15 @@ const tryOn = async (req, res) => {
         message: "Virtual try-on is not available right now.",
       });
     }
+    if (!process.env.TRYON_SERVICE_URL || !process.env.TRYON_SERVICE_KEY) {
+      return res.json({
+        success: false,
+        message: "Try-on service is not configured.",
+      });
+    }
 
     const { productId } = req.body;
-    const photo = req.file; // kept in memory only, never written to disk or database
+    const photo = req.file; // kept in memory only, never saved
 
     if (!photo) {
       return res.json({ success: false, message: "Please upload a photo." });
@@ -40,85 +72,105 @@ const tryOn = async (req, res) => {
         message: "Only JPG, PNG or WEBP photos are allowed.",
       });
     }
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return res.json({ success: false, message: "Product not found." });
+    }
 
+    // The garment image always comes from the stored product, never from the client
+    step = "load product";
     const product = await productModel.findById(productId).lean();
     if (!product || !product.image?.length) {
       return res.json({ success: false, message: "Product not found." });
     }
 
-    const productImage = await urlToBase64(product.image[0]);
+    step = "download product image";
+    const garmentBlob = await fetchProductImage(product.image[0]);
 
-    const prompt =
-      "Image 1 is a photo of a person. Image 2 is a clothing product. " +
-      "Create a realistic photo of the same person wearing the clothing from image 2. " +
-      "Keep the person's face, body, pose and background as they are. " +
-      "Return only the edited image.";
-
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-goog-api-key": process.env.GEMINI_API_KEY,
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                { text: prompt },
-                {
-                  inline_data: {
-                    mime_type: photo.mimetype,
-                    data: photo.buffer.toString("base64"),
-                  },
-                },
-                {
-                  inline_data: {
-                    mime_type: productImage.mimeType,
-                    data: productImage.data,
-                  },
-                },
-              ],
-            },
-          ],
-        }),
-      },
+    step = "start job on Colab";
+    const form = new FormData();
+    form.append(
+      "person",
+      new Blob([photo.buffer], { type: photo.mimetype }),
+      "person.jpg",
     );
+    form.append("garment", garmentBlob, "garment.jpg");
+    form.append("category", pickCategory(product));
 
-    const result = await response.json();
-
-    if (!response.ok) {
-      console.log("TRYON API ERROR:", response.status, result?.error?.message);
+    const startResponse = await callService("/try-on", {
+      method: "POST",
+      body: form,
+    });
+    if (!startResponse.ok) {
+      console.log("TRYON SERVICE ERROR (start):", startResponse.status);
       return res.json({
         success: false,
-        message:
-          response.status === 429
-            ? "Try-on is busy, please try again in a minute."
-            : "Could not create the try-on image. Please try again.",
+        message: "Could not start the try-on. Please try again.",
       });
     }
+    const { job_id: jobId } = await startResponse.json();
+    console.log("TRYON job started:", jobId);
 
-    const parts = result.candidates?.[0]?.content?.parts || [];
-    const imagePart = parts.find((p) => p.inlineData || p.inline_data);
-    const generated = imagePart?.inlineData || imagePart?.inline_data;
+    // Check the status every few seconds until the job finishes
+    step = "poll job status";
+    const deadline = Date.now() + JOB_DEADLINE_MS;
+    let status = "queued";
+    let lastLoggedStatus = "";
+    while (Date.now() < deadline) {
+      await sleep(POLL_INTERVAL_MS);
+      const statusResponse = await callService(`/try-on/${jobId}`);
+      if (!statusResponse.ok) {
+        console.log("TRYON SERVICE ERROR (status):", statusResponse.status);
+        return res.json({
+          success: false,
+          message: "Could not create the try-on image. Please try again.",
+        });
+      }
+      ({ status } = await statusResponse.json());
+      if (status !== lastLoggedStatus) {
+        console.log("TRYON status:", status);
+        lastLoggedStatus = status;
+      }
+      if (status === "done" || status === "error") break;
+    }
 
-    if (!generated) {
+    if (status === "error") {
       return res.json({
         success: false,
         message: "Could not create the try-on image. Try a clearer photo.",
       });
     }
+    if (status !== "done") {
+      return res.json({
+        success: false,
+        message: "Try-on is taking too long. Please try again.",
+      });
+    }
 
+    // Fetch the finished image
+    step = "fetch result";
+    const resultResponse = await callService(`/try-on/${jobId}/result`);
+    if (!resultResponse.ok) {
+      console.log("TRYON SERVICE ERROR (result):", resultResponse.status);
+      return res.json({
+        success: false,
+        message: "Could not load the try-on image. Please try again.",
+      });
+    }
+    const buffer = Buffer.from(await resultResponse.arrayBuffer());
+    console.log("TRYON done");
     res.json({
       success: true,
-      image: `data:${generated.mimeType || generated.mime_type};base64,${generated.data}`,
+      image: `data:image/png;base64,${buffer.toString("base64")}`,
     });
   } catch (error) {
-    console.log("TRYON ERROR:", error.message);
+    console.log(`TRYON ERROR at step "${step}":`, error.name, error.message);
+    const timedOut =
+      error.name === "TimeoutError" || error.name === "AbortError";
     res.json({
       success: false,
-      message: "Try-on is unavailable right now. Please try again.",
+      message: timedOut
+        ? "Try-on took too long. Please try again."
+        : "Try-on is unavailable right now. Please try again.",
     });
   }
 };
