@@ -4,12 +4,15 @@ import { ShopContext } from "../context/ShopContext";
 import Title from "../components/Title";
 import { assets } from "../assets/assets";
 import CartTotal from "../components/CartTotal";
+import ConfirmModal from "../components/ConfirmModal";
 
 const Cart = () => {
   const { products, currency, cartItems, updateQuantity, navigate } =
     useContext(ShopContext);
 
   const [cartData, setCartData] = useState([]);
+  // Item waiting for the user to confirm removal
+  const [pendingDelete, setPendingDelete] = useState(null);
 
   useEffect(() => {
     if (products.length > 0) {
@@ -55,12 +58,15 @@ const Cart = () => {
   };
 
   const handleDelete = (item, productName) => {
-    const confirmed = window.confirm(
-      `Are you sure you want to remove "${productName}" (Size: ${item.size}) from your cart?`,
-    );
-    if (confirmed) {
+    setPendingDelete({ item, productName });
+  };
+
+  const confirmDelete = () => {
+    if (pendingDelete) {
+      const { item } = pendingDelete;
       updateQuantity(item._id, item.size, 0);
     }
+    setPendingDelete(null);
   };
 
   return (
@@ -158,6 +164,20 @@ const Cart = () => {
           </div>
         </div>
       </div>
+
+      <ConfirmModal
+        open={pendingDelete !== null}
+        title="Remove item?"
+        message={
+          pendingDelete
+            ? `"${pendingDelete.productName}" (Size: ${pendingDelete.item.size}) will be removed from your cart.`
+            : ""
+        }
+        confirmText="Yes, remove"
+        cancelText="Keep item"
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   );
 };

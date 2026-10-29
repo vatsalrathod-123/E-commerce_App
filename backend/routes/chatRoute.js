@@ -19,6 +19,6 @@ const chatLimiter = rateLimit({
 
 chatRouter.post("/", chatLimiter, chatWithAssistant);
 chatRouter.get("/history", optionalAuth, getChatHistory);
-chatRouter.delete("/clear", authUser, clearChatHistory);
+chatRouter.post("/clear", authUser, clearChatHistory);
 
 export default chatRouter;
