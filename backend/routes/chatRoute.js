@@ -6,7 +6,6 @@ import {
   clearChatHistory,
 } from "../controllers/chatController.js";
 import optionalAuth from "../middleware/optionalAuth.js";
-import authUser from "../middleware/auth.js";
 
 const chatRouter = express.Router();
 
@@ -19,6 +18,6 @@ const chatLimiter = rateLimit({
 
 chatRouter.post("/", chatLimiter, chatWithAssistant);
 chatRouter.get("/history", optionalAuth, getChatHistory);
-chatRouter.post("/clear", authUser, clearChatHistory);
+chatRouter.delete("/clear", optionalAuth, clearChatHistory);
 
 export default chatRouter;

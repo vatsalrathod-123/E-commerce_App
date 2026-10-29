@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { createContext, useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
@@ -6,7 +7,7 @@ import axios from "axios";
 // eslint-disable-next-line react-refresh/only-export-components
 export const ShopContext = createContext();
 
-const ShopContextProvider = (props) => {  
+const ShopContextProvider = (props) => {
   const currency = "₹";
   const delivery_fee = 10;
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
@@ -108,7 +109,6 @@ const ShopContextProvider = (props) => {
     return totalAmount;
   };
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   const getProductsData = async () => {
     try {
       const response = await axios.get(backendUrl + "/api/product/list");
@@ -122,8 +122,7 @@ const ShopContextProvider = (props) => {
       toast.error(error.message);
     }
   };
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   const getUserCart = async (token) => {
     try {
       const response = await axios.post(
@@ -142,16 +141,18 @@ const ShopContextProvider = (props) => {
     }
   };
 
+  // Load products once when the site opens
   useEffect(() => {
     getProductsData();
-  }, [getProductsData]);
+  }, []);
 
+  // Restore the saved login and cart once on load
   useEffect(() => {
     if (!token && localStorage.getItem("token")) {
       setToken(localStorage.getItem("token"));
       getUserCart(localStorage.getItem("token"));
     }
-  }, [getUserCart, token]);
+  }, [token]);
 
   const value = {
     products,

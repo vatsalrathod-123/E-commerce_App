@@ -182,9 +182,13 @@ const getChatHistory = async (req, res) => {
 };
 
 // Logged-in users can delete all of their own saved conversations
+// Logged-in users can delete all of their own saved conversations
 const clearChatHistory = async (req, res) => {
   try {
-    await chatModel.deleteMany({ ownerKey: `user:${req.body.userId}` });
+    if (!req.userId) {
+      return res.json({ success: false, message: "Please log in first." });
+    }
+    await chatModel.deleteMany({ ownerKey: `user:${req.userId}` });
     res.json({ success: true, message: "Chat history deleted" });
   } catch (error) {
     console.log("CHAT CLEAR ERROR:", error.message);

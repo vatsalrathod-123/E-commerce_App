@@ -112,13 +112,12 @@ const Chatbot = () => {
   };
 
   // Logged-in users can delete all of their saved chats
+  // Logged-in users can delete all of their saved chats
   const deleteHistory = async () => {
     try {
-      const { data } = await axios.post(
-        backendUrl + "/api/chat/clear",
-        {},
-        { headers: { token } },
-      );
+      const { data } = await axios.delete(backendUrl + "/api/chat/clear", {
+        headers: { token },
+      });
       if (data.success) {
         startNewChat();
         toast.success("Chat history deleted");
