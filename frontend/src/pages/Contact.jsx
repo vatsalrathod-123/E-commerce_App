@@ -18,10 +18,11 @@ const Contact = () => {
         <div className="flex flex-col justify-center items-start gap-6">
           <p className="font-semibold text-xl text-gray-600">Our Store</p>
           <p className="text-gray-500">
-            54709 Willms Station <br /> Suite 350, Washington, USA
+            24, Shree Krishna Complex, Near Vastrapur Lake, <br /> Vastrapur,
+            Ahmedabad, Gujarat - 380015
           </p>
           <p className="text-gray-500">
-            Tel: +91 1234567890 <br />
+            Tel: +91 7046375171 <br />
             Email: vats_fs.dev@gmail.com
           </p>
           <p className="font-semibold text-xl text-gray-600">
