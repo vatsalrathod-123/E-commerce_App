@@ -4,6 +4,45 @@ import axios from "axios";
 import { backendURL } from "../App";
 import { toast } from "react-toastify";
 
+// ------------------------ Validation ------------------------
+const validate = (values) => {
+  const errors = {};
+  const name = values.name.trim();
+  const description = values.description.trim();
+  const price = Number(values.price);
+
+  if (!name) errors.name = "Product name is required";
+  else if (name.length < 3)
+    errors.name = "Product name must be at least 3 characters";
+
+  if (!description) errors.description = "Product description is required";
+  else if (description.length < 10)
+    errors.description = "Description must be at least 10 characters";
+
+  if (values.price === "" || values.price === null)
+    errors.price = "Product price is required";
+  else if (!Number.isFinite(price) || price < 1)
+    errors.price = "Price must be at least 1";
+
+  if (values.sizes.length === 0) errors.sizes = "Select at least one size";
+
+  if (!values.image1 && !values.image2 && !values.image3 && !values.image4)
+    errors.images = "Upload at least one image";
+
+  return errors;
+};
+
+// ------------------------ Reusable red-error text ------------------------
+const ErrorText = ({ message }) =>
+  message ? <p className="text-red-500 text-xs mt-1">{message}</p> : null;
+
+const inputClass = (error) =>
+  `w-full px-3 py-2 border rounded ${
+    error
+      ? "border-red-500 text-red-500 placeholder-red-300"
+      : "border-gray-300"
+  }`;
+
 const Add = ({ token }) => {
   const [image1, setImage1] = useState(false);
   const [image2, setImage2] = useState(false);
@@ -18,14 +57,41 @@ const Add = ({ token }) => {
   const [bestseller, setBestseller] = useState(false);
   const [sizes, setSizes] = useState([]);
 
+  // Errors show only after the first submit, then update as the user types
+  const [submitted, setSubmitted] = useState(false);
+
+  const values = {
+    name,
+    description,
+    price,
+    sizes,
+    image1,
+    image2,
+    image3,
+    image4,
+  };
+  const errors = submitted ? validate(values) : {};
+
   const onSubmitHandler = async (e) => {
     e.preventDefault();
+
+    const found = validate(values);
+    setSubmitted(true);
+    if (Object.keys(found).length > 0) {
+      const firstField = Object.keys(found)[0];
+      const target =
+        firstField === "images"
+          ? document.getElementById("image1")
+          : document.querySelector(`[name="${firstField}"]`);
+      target?.focus?.();
+      return;
+    }
 
     try {
       const formData = new FormData();
 
-      formData.append("name", name);
-      formData.append("description", description);
+      formData.append("name", name.trim());
+      formData.append("description", description.trim());
       formData.append("price", price);
       formData.append("category", category);
       formData.append("subCategory", subCategory);
@@ -40,7 +106,7 @@ const Add = ({ token }) => {
       const response = await axios.post(
         backendURL + "/api/product/add",
         formData,
-        { headers: { token } }
+        { headers: { token } },
       );
 
       if (response.data.success) {
@@ -52,6 +118,7 @@ const Add = ({ token }) => {
         setImage3(false);
         setImage4(false);
         setPrice("");
+        setSubmitted(false);
       } else {
         toast.error(response.data.message);
       }
@@ -61,9 +128,18 @@ const Add = ({ token }) => {
     }
   };
 
+  const toggleSize = (size) => {
+    setSizes((prev) =>
+      prev.includes(size)
+        ? prev.filter((item) => item !== size)
+        : [...prev, size],
+    );
+  };
+
   return (
     <form
       onSubmit={onSubmitHandler}
+      noValidate
       className="flex flex-col w-full items-start gap-3"
     >
       <div>
@@ -79,6 +155,7 @@ const Add = ({ token }) => {
               onChange={(e) => setImage1(e.target.files[0])}
               type="file"
               id="image1"
+              accept="image/*"
               hidden
             />
           </label>
@@ -92,6 +169,7 @@ const Add = ({ token }) => {
               onChange={(e) => setImage2(e.target.files[0])}
               type="file"
               id="image2"
+              accept="image/*"
               hidden
             />
           </label>
@@ -105,6 +183,7 @@ const Add = ({ token }) => {
               onChange={(e) => setImage3(e.target.files[0])}
               type="file"
               id="image3"
+              accept="image/*"
               hidden
             />
           </label>
@@ -118,33 +197,37 @@ const Add = ({ token }) => {
               onChange={(e) => setImage4(e.target.files[0])}
               type="file"
               id="image4"
+              accept="image/*"
               hidden
             />
           </label>
         </div>
+        <ErrorText message={errors.images} />
       </div>
+
       <div className="w-full">
         <p className="mb-2">Product name</p>
         <input
+          name="name"
           onChange={(e) => setName(e.target.value)}
           value={name}
-          className="w-full max-w-[500px] px-3 py-2"
+          className={`${inputClass(errors.name)} max-w-[500px]`}
           type="text"
           placeholder="Type here"
-          required
         />
+        <ErrorText message={errors.name} />
       </div>
 
       <div className="w-full">
         <p className="mb-2">Product description </p>
         <textarea
+          name="description"
           onChange={(e) => setDescription(e.target.value)}
           value={description}
-          className="w-full max-w-[500px] px-3 py-2"
-          type="text"
+          className={`${inputClass(errors.description)} max-w-[500px]`}
           placeholder="Write content here..."
-          required
         />
+        <ErrorText message={errors.description} />
       </div>
 
       <div className="flex flex-col sm:flex-row gap-2 w-full sm:gap-8 ">
@@ -175,104 +258,39 @@ const Add = ({ token }) => {
         <div>
           <p className="mb-2">Product Price</p>
           <input
-            onChange={(e) => setPrice(e.target.value)}
+            name="price"
+            onChange={(e) =>
+              setPrice(e.target.value.replace(/\D/g, "").slice(0, 4))
+            }
             value={price}
-            className="w-full px-3 py-2 sm:w-[120px]"
-            type="number"
+            className={`${inputClass(errors.price)} sm:w-[120px]`}
+            type="text"
+            inputMode="numeric"
+            maxLength={4}
             placeholder="25"
           />
+          <ErrorText message={errors.price} />
         </div>
       </div>
 
       <div>
         <p className="mb-2"> Product Sizes </p>
         <div className="flex gap-3">
-          <div
-            onClick={() =>
-              setSizes((prev) =>
-                prev.includes("S")
-                  ? prev.filter((item) => item !== "S")
-                  : [...prev, "S"]
-              )
-            }
-          >
-            <p
-              className={`${
-                sizes.includes("S") ? "bg-pink-100" : "bg-slate-200"
-              } px-3 py-1 cursor-pointer`}
-            >
-              S
-            </p>
-          </div>
-          <div
-            onClick={() =>
-              setSizes((prev) =>
-                prev.includes("M")
-                  ? prev.filter((item) => item !== "M")
-                  : [...prev, "M"]
-              )
-            }
-          >
-            <p
-              className={`${
-                sizes.includes("M") ? "bg-pink-100" : "bg-slate-200"
-              } px-3 py-1 cursor-pointer`}
-            >
-              M
-            </p>
-          </div>
-          <div
-            onClick={() =>
-              setSizes((prev) =>
-                prev.includes("L")
-                  ? prev.filter((item) => item !== "L")
-                  : [...prev, "L"]
-              )
-            }
-          >
-            <p
-              className={`${
-                sizes.includes("L") ? "bg-pink-100" : "bg-slate-200"
-              } px-3 py-1 cursor-pointer`}
-            >
-              L
-            </p>
-          </div>
-          <div
-            onClick={() =>
-              setSizes((prev) =>
-                prev.includes("XL")
-                  ? prev.filter((item) => item !== "XL")
-                  : [...prev, "XL"]
-              )
-            }
-          >
-            <p
-              className={`${
-                sizes.includes("XL") ? "bg-pink-100" : "bg-slate-200"
-              } px-3 py-1 cursor-pointer`}
-            >
-              XL
-            </p>
-          </div>
-          <div
-            onClick={() =>
-              setSizes((prev) =>
-                prev.includes("XXL")
-                  ? prev.filter((item) => item !== "XXL")
-                  : [...prev, "XXL"]
-              )
-            }
-          >
-            <p
-              className={`${
-                sizes.includes("XXL") ? "bg-pink-100" : "bg-slate-200"
-              } px-3 py-1 cursor-pointer`}
-            >
-              XXL
-            </p>
-          </div>
+          {["S", "M", "L", "XL", "XXL"].map((size) => (
+            <div key={size} onClick={() => toggleSize(size)}>
+              <p
+                className={`${
+                  sizes.includes(size) ? "bg-pink-100" : "bg-slate-200"
+                } px-3 py-1 cursor-pointer ${
+                  errors.sizes ? "ring-1 ring-red-500" : ""
+                }`}
+              >
+                {size}
+              </p>
+            </div>
+          ))}
         </div>
+        <ErrorText message={errors.sizes} />
       </div>
 
       <div className="flex gap-2 mt-2">
