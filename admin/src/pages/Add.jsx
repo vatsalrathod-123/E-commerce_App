@@ -60,6 +60,9 @@ const Add = ({ token }) => {
   // Errors show only after the first submit, then update as the user types
   const [submitted, setSubmitted] = useState(false);
 
+  // True while the upload is running, so the button can't be clicked again
+  const [adding, setAdding] = useState(false);
+
   const values = {
     name,
     description,
@@ -75,6 +78,9 @@ const Add = ({ token }) => {
   const onSubmitHandler = async (e) => {
     e.preventDefault();
 
+    // Ignore extra submits (for example, from pressing Enter) while adding
+    if (adding) return;
+
     const found = validate(values);
     setSubmitted(true);
     if (Object.keys(found).length > 0) {
@@ -87,6 +93,7 @@ const Add = ({ token }) => {
       return;
     }
 
+    setAdding(true);
     try {
       const formData = new FormData();
 
@@ -125,6 +132,8 @@ const Add = ({ token }) => {
     } catch (error) {
       console.error(error);
       toast.error(error.message);
+    } finally {
+      setAdding(false);
     }
   };
 
@@ -307,9 +316,10 @@ const Add = ({ token }) => {
 
       <button
         type="submit"
-        className="w-28 py-3 mt-4 bg-black text-white cursor-pointer"
+        disabled={adding}
+        className="w-40 py-3 mt-4 bg-black text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        ADD
+        {adding ? "Adding..." : "ADD"}
       </button>
     </form>
   );
