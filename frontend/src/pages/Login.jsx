@@ -9,8 +9,11 @@ const Login = () => {
   const { token, setToken, navigate, backendUrl } = useContext(ShopContext);
 
   const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [email, setEmail] = useState("");
+  // Login field accepts either an email or a username
+  const [identifier, setIdentifier] = useState("");
 
   const onSubmitHandler = async (event) => {
     event.preventDefault();
@@ -18,6 +21,7 @@ const Login = () => {
       if (currentState === "Sign Up") {
         const response = await axios.post(backendUrl + "/api/user/register", {
           name,
+          username,
           email,
           password,
         });
@@ -29,7 +33,7 @@ const Login = () => {
         }
       } else {
         const response = await axios.post(backendUrl + "/api/user/login", {
-          email,
+          identifier,
           password,
         });
         if (response.data.success) {
@@ -60,32 +64,59 @@ const Login = () => {
         <p className="prata-regular text-3xl">{currentState}</p>
         <hr className="border-none h-[1.5px] w-8 bg-gray-800" />
       </div>
+
       {currentState === "Login" ? (
-        ""
-      ) : (
         <input
-          onChange={(e) => setName(e.target.value)}
-          value={name}
+          onChange={(e) => setIdentifier(e.target.value)}
+          value={identifier}
           type="text"
           className="w-full px-3 py-2 border border-gray-800"
-          placeholder="Name"
+          placeholder="Email or Username"
+          autoComplete="username"
           required
         />
+      ) : (
+        <>
+          <input
+            onChange={(e) => setName(e.target.value)}
+            value={name}
+            type="text"
+            className="w-full px-3 py-2 border border-gray-800"
+            placeholder="Name"
+            required
+          />
+          <input
+            onChange={(e) => setUsername(e.target.value)}
+            value={username}
+            type="text"
+            className="w-full px-3 py-2 border border-gray-800"
+            placeholder="Username (optional)"
+            autoComplete="username"
+          />
+          <p className="w-full text-xs text-gray-500 -mt-2">
+            3 to 20 characters: letters, numbers or underscore. You can also log
+            in with your email.
+          </p>
+          <input
+            onChange={(e) => setEmail(e.target.value)}
+            value={email}
+            type="email"
+            className="w-full px-3 py-2 border border-gray-800"
+            placeholder="Email"
+            required
+          />
+        </>
       )}
-      <input
-        onChange={(e) => setEmail(e.target.value)}
-        value={email}
-        type="email"
-        className="w-full px-3 py-2 border border-gray-800"
-        placeholder="Email"
-        required
-      />
+
       <input
         onChange={(e) => setPassword(e.target.value)}
         value={password}
         type="password"
         className="w-full px-3 py-2 border border-gray-800"
         placeholder="Password"
+        autoComplete={
+          currentState === "Login" ? "current-password" : "new-password"
+        }
         required
       />
       <div className="w-full flex justify-between text-sm mt-[-8px]">

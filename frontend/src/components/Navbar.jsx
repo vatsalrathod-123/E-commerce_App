@@ -1,10 +1,16 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import { assets } from "../assets/assets";
 import { NavLink, Link } from "react-router-dom";
 import { ShopContext } from "../context/ShopContext";
+import ProfileModal from "./ProfileModal";
+import ConfirmModal from "./ConfirmModal";
 
 const Navbar = () => {
   const [visible, setVisible] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const profileMenuRef = useRef(null);
   const {
     setShowSearch,
     getCartCount,
@@ -13,6 +19,20 @@ const Navbar = () => {
     setToken,
     setCartItems,
   } = useContext(ShopContext);
+
+  // Admin panel address (runs on port 5174 in development)
+  const ADMIN_URL = import.meta.env.VITE_ADMIN_URL || "http://localhost:5174";
+
+  // Close the account menu when clicking anywhere outside it
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
+        setProfileMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const logout = () => {
     navigate("/login");
@@ -50,29 +70,71 @@ const Navbar = () => {
 
       {/* cart and login */}
       <div className="flex items-center gap-6">
+        <a
+          href={ADMIN_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hidden sm:inline-block border border-black px-3 py-1 text-xs font-medium hover:bg-black hover:text-white transition-colors"
+        >
+          ADMIN
+        </a>
         <img
           onClick={() => setShowSearch(true)}
           src={assets.search_icon}
           className="w-5 cursor-pointer"
           alt="..."
         />
-        <div className="group relative">
-          <img
-            onClick={() => (token ? null : navigate("/login"))}
-            className="w-5 cursor-pointer"
-            src={assets.profile_icon}
-            alt="..."
-          />
-          {/* DropDown Menu */}
-          {token && (
-            <div className="group-hover:block hidden absolute dropdown-menu right-0 pt-4">
-              <div className="flex flex-col gap-2 w-36 py-3 px-5 bg-slate-100 text-gray-500 rounded">
-                <p className="cursor-pointer hover:text-black"> My profile </p>
-                <p onClick={()=>navigate("/orders")} className="cursor-pointer hover:text-black"> Orders </p>
-                <p onClick={logout} className="cursor-pointer hover:text-black">
-                  {" "}
-                  Logout{" "}
-                </p>
+        <div className="relative" ref={profileMenuRef}>
+          <button
+            type="button"
+            onClick={() => {
+              if (!token) {
+                navigate("/login");
+              } else {
+                setProfileMenuOpen((open) => !open);
+              }
+            }}
+            aria-label="Account menu"
+            aria-expanded={profileMenuOpen}
+            className="cursor-pointer flex items-center"
+          >
+            <img className="w-5" src={assets.profile_icon} alt="" />
+          </button>
+
+          {/* Account menu: opens on click, closes on selection or outside click */}
+          {token && profileMenuOpen && (
+            <div className="absolute right-0 top-full pt-3 z-40">
+              <div className="flex flex-col gap-1 w-36 py-2 bg-slate-100 text-gray-600 rounded shadow-md">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setProfileMenuOpen(false);
+                    setShowProfile(true);
+                  }}
+                  className="text-left px-4 py-2 hover:bg-slate-200 hover:text-black cursor-pointer"
+                >
+                  My profile
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setProfileMenuOpen(false);
+                    navigate("/orders");
+                  }}
+                  className="text-left px-4 py-2 hover:bg-slate-200 hover:text-black cursor-pointer"
+                >
+                  Orders
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setProfileMenuOpen(false);
+                    setShowLogoutConfirm(true);
+                  }}
+                  className="text-left px-4 py-2 hover:bg-slate-200 hover:text-black cursor-pointer"
+                >
+                  Logout
+                </button>
               </div>
             </div>
           )}
@@ -140,8 +202,34 @@ const Navbar = () => {
           >
             CONTACT
           </NavLink>
+          <a
+            href={ADMIN_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => setVisible(false)}
+            className="py-2 pl-6 border"
+          >
+            ADMIN PANEL
+          </a>
         </div>
       </div>
+
+      {/* My profile popup */}
+      <ProfileModal open={showProfile} onClose={() => setShowProfile(false)} />
+
+      {/* Logout confirmation */}
+      <ConfirmModal
+        open={showLogoutConfirm}
+        title="Log out?"
+        message="You will need to log in again to view your orders and saved chats."
+        confirmText="Yes, log out"
+        cancelText="Stay logged in"
+        onConfirm={() => {
+          setShowLogoutConfirm(false);
+          logout();
+        }}
+        onCancel={() => setShowLogoutConfirm(false)}
+      />
     </div>
   );
 };

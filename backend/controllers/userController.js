@@ -9,11 +9,25 @@ const createToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET);
 };
 
-// Route for user login
+// Route for user login (email or username + password)
 const loginUser = async (req, res) => {
   try {
-    const { email, password } = req.body;
-    const user = await userModel.findOne({ email });
+    // Accept "identifier" (new form) or "email" (older form)
+    const identifier = String(
+      req.body.identifier || req.body.email || "",
+    ).trim();
+    const { password } = req.body;
+
+    if (!identifier || !password) {
+      return res.json({
+        success: false,
+        message: "Please enter your email or username and password",
+      });
+    }
+
+    const user = await userModel.findOne({
+      $or: [{ email: identifier }, { username: identifier.toLowerCase() }],
+    });
 
     if (!user) {
       return res.json({ success: false, message: "User Doesn't exists" });
@@ -32,10 +46,11 @@ const loginUser = async (req, res) => {
   }
 };
 
-//Route for user registration
+//Route for user registration (username is optional)
 const registerUser = async (req, res) => {
   try {
     const { name, email, password } = req.body;
+    const rawUsername = String(req.body.username || "").trim();
 
     //checking user already exists or not
     const exists = await userModel.findOne({ email });
@@ -47,7 +62,7 @@ const registerUser = async (req, res) => {
     if (!validator.isEmail(email)) {
       return res.json({
         success: false,
-        message: "Please Enter a valid message",
+        message: "Please Enter a valid email",
       });
     }
     if (password.length < 8) {
@@ -57,6 +72,27 @@ const registerUser = async (req, res) => {
       });
     }
 
+    //validating the optional username
+    let username;
+    if (rawUsername) {
+      if (!/^[a-zA-Z0-9_]{3,20}$/.test(rawUsername)) {
+        return res.json({
+          success: false,
+          message:
+            "Username must be 3 to 20 characters: letters, numbers or underscore only",
+        });
+      }
+      username = rawUsername.toLowerCase();
+
+      const usernameTaken = await userModel.findOne({ username });
+      if (usernameTaken) {
+        return res.json({
+          success: false,
+          message: "Username is already taken",
+        });
+      }
+    }
+
     //hashing user password
     const salt = await bycrpt.genSalt(10);
     const hashedPassword = await bycrpt.hash(password, salt);
@@ -64,6 +100,7 @@ const registerUser = async (req, res) => {
     const newUser = new userModel({
       name,
       email,
+      username,
       password: hashedPassword,
     });
 
@@ -111,7 +148,10 @@ const forgotPassword = async (req, res) => {
     }
 
     const rawToken = crypto.randomBytes(32).toString("hex");
-    const hashedToken = crypto.createHash("sha256").update(rawToken).digest("hex");
+    const hashedToken = crypto
+      .createHash("sha256")
+      .update(rawToken)
+      .digest("hex");
 
     user.resetToken = hashedToken;
     user.resetTokenExpiry = Date.now() + 15 * 60 * 1000; // 15 minutes
@@ -147,7 +187,10 @@ const resetPassword = async (req, res) => {
     const { token, email, newPassword } = req.body;
 
     if (!newPassword || newPassword.length < 8) {
-      return res.json({ success: false, message: "Please enter a strong password" });
+      return res.json({
+        success: false,
+        message: "Please enter a strong password",
+      });
     }
 
     const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
@@ -159,7 +202,10 @@ const resetPassword = async (req, res) => {
     });
 
     if (!user) {
-      return res.json({ success: false, message: "Reset link is invalid or has expired" });
+      return res.json({
+        success: false,
+        message: "Reset link is invalid or has expired",
+      });
     }
 
     const salt = await bycrpt.genSalt(10);
