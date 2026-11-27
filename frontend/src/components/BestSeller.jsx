@@ -1,8 +1,10 @@
 import React from "react";
+import { motion } from "framer-motion";
 import { useContext, useState, useEffect } from "react";
 import { ShopContext } from "../context/ShopContext";
 import Title from "./Title";
 import ProductItem from "./ProductItem";
+import { fadeUp, stagger, viewOnce } from "../animations/variants";
 
 const BestSeller = () => {
   const { products } = useContext(ShopContext);
@@ -17,12 +19,24 @@ const BestSeller = () => {
     <div className="my-10">
       <div className="text-center text-3xl py-8">
         <Title text1={"BEST"} text2={"SELLERS"} />
-        <p className="w-3/4 m-auto text-xs sm:text-sm md:text-base text-gray-600">
+        <motion.p
+          className="w-3/4 m-auto text-xs sm:text-sm md:text-base text-gray-600"
+          initial="hidden"
+          whileInView="show"
+          viewport={viewOnce}
+          variants={fadeUp}
+        >
           Our most loved pieces, picked by thousands of happy customers.
           Discover the styles everyone keeps coming back for.
-        </p>
+        </motion.p>
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 gap-y-6">
+      <motion.div
+        className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 gap-y-6"
+        initial="hidden"
+        whileInView="show"
+        viewport={viewOnce}
+        variants={stagger(0.08)}
+      >
         {bestseller.map((item, index) => (
           <ProductItem
             key={index}
@@ -32,7 +46,7 @@ const BestSeller = () => {
             price={item.price}
           />
         ))}
-      </div>
+      </motion.div>
     </div>
   );
 };
